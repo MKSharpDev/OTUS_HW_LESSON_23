@@ -13,18 +13,19 @@ using System.Diagnostics.Metrics;
 //Минимальное количество баллов: 7
 
 
-List<string> searchList = FileReaderByPath("../");
+string path = "../";
+FileChecker(path);
 
 Stopwatch stopwatch = Stopwatch.StartNew();
 stopwatch.Start();
-ParallelSearcher(searchList);
+ParallelSearcher(path);
 stopwatch.Stop();
 TimeSpan ts = stopwatch.Elapsed;
 Console.WriteLine(ts);
 Console.ReadKey();
 
 
-List<string> FileReaderByPath(string path)
+void FileChecker(string path)
 {
     string[] allfiles = Directory.GetFiles(path);
 
@@ -32,36 +33,28 @@ List<string> FileReaderByPath(string path)
     {
         for (int i = 1; i < 4; i++)
         {
-            string newText = StringGenerator(500);
+            string newText = StringGenerator(5000);
             string newPath = $"{path}NewStringFile{i}.txt";
             File.WriteAllText(newPath, newText);
         }
-        allfiles = Directory.GetFiles(path);
     }
-
-    List<string> searchList = new List<string>();
-
-    foreach (string file in allfiles)
-    {
-        string text = File.ReadAllText(file);
-        searchList.Add(text);
-    }
-    
-    return searchList;
 }
 
-async void ParallelSearcher(List<string> searchList)
+async void ParallelSearcher(string searchList)
 {
-    Parallel.ForEach(searchList, async toSearch =>
+    string[] allfiles = Directory.GetFiles(path);
+
+    Parallel.ForEach(allfiles, async toSearch =>
         {
-            int count = await Searcher(toSearch);
+            string text = File.ReadAllText(toSearch);
+            int count = Searcher(text);
             Console.WriteLine($"Поток {Thread.CurrentThread.ManagedThreadId} поиск закончил - {count} пробелов");
         }
     );
 }
 
 
-async Task<int> Searcher(string toSearch)
+int Searcher(string toSearch)
 {
     int counter = 0;
     for (int i = 0; i < toSearch.Length; i++)
@@ -78,7 +71,7 @@ async Task<int> Searcher(string toSearch)
 string StringGenerator(int length)
 {
     Random random = new Random();
-    const string chars = " ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 ";
     return new string(Enumerable.Repeat(chars, length)
         .Select(s => s[random.Next(s.Length)]).ToArray());
 }
