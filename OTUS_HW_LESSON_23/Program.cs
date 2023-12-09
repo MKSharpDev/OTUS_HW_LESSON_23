@@ -1,4 +1,8 @@
-﻿//Описание / Пошаговая инструкция выполнения домашнего задания:
+﻿using System;
+using System.Diagnostics;
+using System.Diagnostics.Metrics;
+
+//Описание / Пошаговая инструкция выполнения домашнего задания:
 //Прочитать 3 файла параллельно и вычислить количество пробелов в них (через Task).
 //Написать функцию, принимающую в качестве аргумента путь к папке.
 //Из этой папки параллельно прочитать все файлы и вычислить количество пробелов в них.
@@ -9,22 +13,55 @@
 //Минимальное количество баллов: 7
 
 
+List<string> searchList = FileReaderByPath("../");
 
-using System.Diagnostics.Metrics;
-
-string toSearch1 = " s s ds qqdфвв sda   qdd   ";
-string toSearch2 = " s s ds q  qdsda   qdd";
-string toSearch3 = " s s ds qqds  da   qdd";
-List<string> searchList = new List<string>() { toSearch1 , toSearch2, toSearch3 };
-
-//Parallel.ForEach(searchList, )
-
-int result = await searcher(toSearch1);
-
-Console.WriteLine(result);
+Stopwatch stopwatch = Stopwatch.StartNew();
+stopwatch.Start();
+ParallelSearcher(searchList);
+stopwatch.Stop();
+TimeSpan ts = stopwatch.Elapsed;
+Console.WriteLine(ts);
 Console.ReadKey();
 
-async Task<int> searcher(string toSearch)
+
+List<string> FileReaderByPath(string path)
+{
+    string[] allfiles = Directory.GetFiles(path);
+
+    if (!allfiles.Any())
+    {
+        for (int i = 1; i < 4; i++)
+        {
+            string newText = StringGenerator(500);
+            string newPath = $"{path}NewStringFile{i}.txt";
+            File.WriteAllText(newPath, newText);
+        }
+        allfiles = Directory.GetFiles(path);
+    }
+
+    List<string> searchList = new List<string>();
+
+    foreach (string file in allfiles)
+    {
+        string text = File.ReadAllText(file);
+        searchList.Add(text);
+    }
+    
+    return searchList;
+}
+
+async void ParallelSearcher(List<string> searchList)
+{
+    Parallel.ForEach(searchList, async toSearch =>
+        {
+            int count = await Searcher(toSearch);
+            Console.WriteLine($"Поток {Thread.CurrentThread.ManagedThreadId} поиск закончил - {count} пробелов");
+        }
+    );
+}
+
+
+async Task<int> Searcher(string toSearch)
 {
     int counter = 0;
     for (int i = 0; i < toSearch.Length; i++)
@@ -36,4 +73,12 @@ async Task<int> searcher(string toSearch)
     }
 
     return counter;
+}
+
+string StringGenerator(int length)
+{
+    Random random = new Random();
+    const string chars = " ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    return new string(Enumerable.Repeat(chars, length)
+        .Select(s => s[random.Next(s.Length)]).ToArray());
 }
