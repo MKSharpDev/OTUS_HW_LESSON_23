@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Diagnostics;
 using System.Diagnostics.Metrics;
+using System.Drawing;
+using System.Linq;
 
 //Описание / Пошаговая инструкция выполнения домашнего задания:
 //Прочитать 3 файла параллельно и вычислить количество пробелов в них (через Task).
@@ -22,6 +24,13 @@ ParallelSearcher(path);
 stopwatch.Stop();
 TimeSpan ts = stopwatch.Elapsed;
 Console.WriteLine(ts);
+
+stopwatch.Restart();
+ParallelSearcherTask(path);
+stopwatch.Stop();
+TimeSpan ts1 = stopwatch.Elapsed;
+Console.WriteLine(ts1);
+
 Console.ReadKey();
 
 
@@ -51,6 +60,23 @@ async void ParallelSearcher(string searchList)
             Console.WriteLine($"Поток {Thread.CurrentThread.ManagedThreadId} поиск закончил - {count} пробелов");
         }
     );
+}
+async void ParallelSearcherTask(string searchList)
+{
+    string[] allfiles = Directory.GetFiles(path);
+    var parallelTask = new List<Task>();
+
+    foreach (var item in allfiles)
+    {
+        Task newTask = Task.Factory.StartNew(() =>
+        {
+            string text = File.ReadAllText(item);
+            int count = Searcher(text);
+            Console.WriteLine($"Поток {Thread.CurrentThread.ManagedThreadId} поиск закончил - {count} пробелов");
+        });
+        parallelTask.Add(newTask);
+    }
+    await Task.WhenAll(parallelTask);
 }
 
 
