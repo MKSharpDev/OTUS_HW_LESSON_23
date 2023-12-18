@@ -56,6 +56,7 @@ Console.WriteLine();
 
 Console.ReadKey();
 
+//на 5000 смиволов
 //Поток 5 поиск закончил - 145 пробелов
 //Поток 1 поиск закончил - 160 пробелов
 //Поток 8 поиск закончил - 116 пробелов
@@ -80,6 +81,31 @@ Console.ReadKey();
 //ParallelSearcherTask
 //00:00:00.0014381
 
+//на 10000000 символов
+//Поток 1 поиск закончил - 269177 пробелов
+//Поток 5 поиск закончил - 270204 пробелов
+//Поток 8 поиск закончил - 269842 пробелов
+//ParallelSearcher
+//00:00:00.1462939
+
+//Поток 8 поиск закончил - 269177 пробелов
+//Поток 8 поиск закончил - 269842 пробелов
+//Поток 8 поиск закончил - 270204 пробелов
+//ParallelSearcherTaskInOneThread
+//00:00:00.2386070
+
+//Поток 8 поиск закончил - 269177 пробелов
+//Поток 10 поиск закончил - 270204 пробелов
+//Поток 3 поиск закончил - 269842 пробелов
+//ParallelSearcherTaskFactory
+//00:00:00.1731191
+
+//Поток 10 поиск закончил - 269177 пробелов
+//Поток 8 поиск закончил - 270204 пробелов
+//Поток 3 поиск закончил - 269842 пробелов
+//ParallelSearcherTask
+//00:00:00.1822725
+
 
 
 void FileChecker(string path)
@@ -90,7 +116,7 @@ void FileChecker(string path)
     {
         for (int i = 1; i < 4; i++)
         {
-            string newText = StringGenerator(5000);
+            string newText = StringGenerator(10000000);
             string newPath = $"{path}NewStringFile{i}.txt";
             File.WriteAllText(newPath, newText);
         }
@@ -124,7 +150,7 @@ async void ParallelSearcherTaskFactory(string searchList)
         });
         parallelTask.Add(newTask);
     }
-    await Task.WhenAll(parallelTask);
+    Task.WaitAll(Task.WhenAll(parallelTask));
 }
 
 async void ParallelSearcherTaskInOneThread(string searchList)
