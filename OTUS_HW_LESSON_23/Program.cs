@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Diagnostics.Metrics;
 using System.Drawing;
 using System.Linq;
+using System.Threading.Tasks;
 
 //Описание / Пошаговая инструкция выполнения домашнего задания:
 //Прочитать 3 файла параллельно и вычислить количество пробелов в них (через Task).
@@ -23,24 +24,61 @@ stopwatch.Start();
 ParallelSearcher(path);
 stopwatch.Stop();
 TimeSpan ts = stopwatch.Elapsed;
+Console.WriteLine("ParallelSearcher");
 Console.WriteLine(ts);
+Console.WriteLine();
+
+stopwatch.Restart();
+ParallelSearcherTaskInOneThread(path);
+stopwatch.Stop();
+TimeSpan ts2 = stopwatch.Elapsed;
+Console.WriteLine("ParallelSearcherTaskInOneThread");
+Console.WriteLine(ts2);
+Console.WriteLine();
+
+stopwatch.Restart();
+ParallelSearcherTaskFactory(path);
+stopwatch.Stop();
+TimeSpan ts1 = stopwatch.Elapsed;
+Console.WriteLine("ParallelSearcherTaskFactory");
+Console.WriteLine(ts1);
+Console.WriteLine();
 
 stopwatch.Restart();
 ParallelSearcherTask(path);
 stopwatch.Stop();
-TimeSpan ts1 = stopwatch.Elapsed;
-Console.WriteLine(ts1);
+TimeSpan ts3 = stopwatch.Elapsed;
+Console.WriteLine("ParallelSearcherTask");
+Console.WriteLine(ts3);
+Console.WriteLine();
+
+
 
 Console.ReadKey();
 
 //Поток 5 поиск закончил - 145 пробелов
 //Поток 1 поиск закончил - 160 пробелов
-//Поток 3 поиск закончил - 116 пробелов
-//00:00:00.0580799
+//Поток 8 поиск закончил - 116 пробелов
+//ParallelSearcher
+//00:00:00.0521862
+
+//Поток 5 поиск закончил - 116 пробелов
+//Поток 5 поиск закончил - 160 пробелов
+//Поток 5 поиск закончил - 145 пробелов
+//ParallelSearcherTaskInOneThread
+//00:00:00.0026191
+
+//Поток 8 поиск закончил - 160 пробелов
+//Поток 5 поиск закончил - 116 пробелов
+//Поток 9 поиск закончил - 145 пробелов
+//ParallelSearcherTaskFactory
+//00:00:00.0027041
+
+//Поток 8 поиск закончил - 145 пробелов
 //Поток 5 поиск закончил - 160 пробелов
 //Поток 3 поиск закончил - 116 пробелов
-//Поток 9 поиск закончил - 145 пробелов
-//00:00:00.0015980
+//ParallelSearcherTask
+//00:00:00.0014381
 
 
 
@@ -71,7 +109,7 @@ async void ParallelSearcher(string searchList)
         }
     );
 }
-async void ParallelSearcherTask(string searchList)
+async void ParallelSearcherTaskFactory(string searchList)
 {
     string[] allfiles = Directory.GetFiles(path);
     var parallelTask = new List<Task>();
@@ -88,6 +126,44 @@ async void ParallelSearcherTask(string searchList)
     }
     await Task.WhenAll(parallelTask);
 }
+
+async void ParallelSearcherTaskInOneThread(string searchList)
+{
+    string[] allfiles = Directory.GetFiles(path);
+
+    foreach (var item in allfiles)
+    {
+        Task tsk = new Task(() =>
+        {
+            string text = File.ReadAllText(item);
+            int count = Searcher(text);
+            Console.WriteLine($"Поток {Thread.CurrentThread.ManagedThreadId} поиск закончил - {count} пробелов");
+        });
+        tsk.Start();
+        tsk.Wait();
+    }
+}
+
+async void ParallelSearcherTask(string searchList)
+{
+    string[] allfiles = Directory.GetFiles(path);
+    var parallelTask = new List<Task>();
+
+
+    foreach (var item in allfiles)
+    {
+        Task tsk =  new Task(async () =>
+        {
+            string text = File.ReadAllText(item);
+            int count = Searcher(text);
+            Console.WriteLine($"Поток {Thread.CurrentThread.ManagedThreadId} поиск закончил - {count} пробелов");
+        });
+        parallelTask.Add(tsk);
+    }
+    parallelTask.ForEach(t => t.Start());
+    Task.WaitAll(Task.WhenAll(parallelTask));
+}
+
 
 
 int Searcher(string toSearch)
@@ -111,3 +187,4 @@ string StringGenerator(int length)
     return new string(Enumerable.Repeat(chars, length)
         .Select(s => s[random.Next(s.Length)]).ToArray());
 }
+
